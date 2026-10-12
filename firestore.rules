@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Live Stage app state
+    match /app_state/{docId} {
+      allow read, write: if true;
+    }
+    
+    // 2. Master Events
+    match /master_events/{docId} {
+      allow read, write: if true;
+    }
+    
+    // 3. Sub Events
+    match /sub_events/{docId} {
+      allow read, write: if true;
+    }
+
+    // 4. Sub Event Contestants Roster
+    match /sub_event_participants/{docId} {
+      allow read, write: if true;
+    }
+
+    // 5. Performed Contestants Log
+    match /performed_participants/{docId} {
+      allow read, write: if true;
+    }
+
+    // 6. Audience Ratings & Votes
+    match /votes/{voteId} {
+      allow read: if true;
+
+      // Disallow updating votes once cast
+      allow update: if false;
+
+      // Allow deletion only for administrative cleanup
+      allow delete: if true;
+
+      allow create: if
+        // 1. Deterministic ID Check
+        voteId == request.resource.data.subEventId + '_' + request.resource.data.participantId + '_' + request.resource.data.voterUuid &&
+
+        // 2. Schema Poisoning Prevention (Only allow these exact fields)
+        request.resource.data.keys().hasOnly(['masterEventId', 'subEventId', 'participantId', 'voterUuid', 'rating', 'timestamp']) &&
+
+        // 3. Type and Size Bounds (Stops multi-megabyte string injections)
+        request.resource.data.voterUuid is string &&
+        request.resource.data.voterUuid.size() > 0 &&
+        request.resource.data.voterUuid.size() < 100 &&
+        request.resource.data.subEventId is string &&
+        request.resource.data.subEventId.size() > 0 &&
+        request.resource.data.subEventId.size() < 100 &&
+        request.resource.data.participantId is string &&
+        request.resource.data.participantId.size() > 0 &&
+        request.resource.data.participantId.size() < 100 &&
+        request.resource.data.masterEventId is string &&
+        request.resource.data.masterEventId.size() < 100 &&
+        request.resource.data.rating is int &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5 &&
+
+        // 4. Live Stage Validation (Verify voting window is actively open for this sub-event)
+        get(/databases/$(database)/documents/app_state/current_stage).data.isVotingOpen == true &&
+        get(/databases/$(database)/documents/app_state/current_stage).data.subEventId == request.resource.data.subEventId &&
+
+        // In Single mode, ensure the participant on stage matches. In Parallel mode, stage is shared.
+        (
+          get(/databases/$(database)/documents/app_state/current_stage).data.votingMode == "parallel" ||
+          get(/databases/$(database)/documents/app_state/current_stage).data.participantId == request.resource.data.participantId
+        );
+    }
+  }
+}
