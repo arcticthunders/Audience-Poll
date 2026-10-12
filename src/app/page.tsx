@@ -248,12 +248,22 @@ export default function AudiencePage() {
           /* GROUP ACTIVITY RATING MODE (X Chest Numbers Together) */
           <div className="w-full space-y-4 animate-in fade-in zoom-in duration-300">
             {/* Header Badge */}
-            <div className="text-center space-y-1 bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-amber-500/10 p-4 rounded-3xl border border-amber-500/30 backdrop-blur-md">
-              <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold uppercase tracking-widest">
-                <Users className="w-3.5 h-3.5 text-amber-400" />
-                <span>Group Activity Mode ({stage.groupParticipants.length} Contestants)</span>
-              </span>
-              <p className="text-xs text-slate-400 font-medium pt-1">
+            <div className="text-center space-y-2 bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-amber-500/10 p-4 rounded-3xl border border-amber-500/30 backdrop-blur-md">
+              {/* Event Name Badge */}
+              <div className="flex items-center justify-center">
+                <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 text-xs font-bold uppercase tracking-widest">
+                  <Award className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>{stage.subEventName || `Sub-Event #${stage.subEventId}`}</span>
+                </span>
+              </div>
+
+              <div>
+                <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold uppercase tracking-widest">
+                  <Users className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Group Activity Mode ({stage.groupParticipants.length} Contestants)</span>
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-medium pt-0.5">
                 Rate each chest number individually below
               </p>
             </div>

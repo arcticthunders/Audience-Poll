@@ -524,6 +524,14 @@ export default function AdminPage() {
 
   // Toggle Sub-Event Status
   const handleToggleSubStatus = async (subId: string, currentStatus: "OPEN" | "CLOSED") => {
+    if (
+      currentStatus === "OPEN" &&
+      isCurrentVotingOpen &&
+      String(currentStage?.subEventId) === String(subId)
+    ) {
+      alert("Cannot close sub-event while it is currently live on stage! Please close the rating / reset the stage first.");
+      return;
+    }
     const nextStatus = currentStatus === "OPEN" ? "CLOSED" : "OPEN";
     await toggleSubEventStatus(subId, nextStatus);
   };
@@ -714,8 +722,16 @@ export default function AdminPage() {
       <main className="max-w-6xl mx-auto">
         {/* TAB 1: LIVE STAGE CONTROLLER */}
         {activeTab === "stage" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
+          <div
+            className={`grid grid-cols-1 ${
+              stageMode === "sequential" ? "lg:grid-cols-3 gap-8" : "gap-8"
+            }`}
+          >
+            <div
+              className={`${
+                stageMode === "sequential" ? "lg:col-span-2" : "w-full"
+              } space-y-6`}
+            >
               <div className="p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 gap-2">
                   <div>
@@ -1051,63 +1067,63 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Live Analytics Panel */}
-            <div className="space-y-6">
-              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-6">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                      <BarChart3 className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-white text-base">Live Rating Tally</h3>
-                      <p className="text-xs text-slate-400">
-                        {isCurrentVotingOpen && currentStage?.participantId === "PARALLEL"
-                          ? `Parallel Mode (${currentStage.groupParticipants?.length || 0} Contestants)`
-                          : `Chest #${activeRatingChest || "---"}`}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="flex items-center space-x-1 text-2xl font-black text-amber-400">
-                      <span>{liveStats.average}</span>
-                      <Star className="w-6 h-6 fill-amber-400 text-amber-400" />
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-medium">{liveStats.count} Total Ratings</p>
-                  </div>
-                </div>
-
-                {/* Star Breakdown Progress Bars */}
-                <div className="space-y-2.5">
-                  {[5, 4, 3, 2, 1].map((starKey) => {
-                    const count = liveStats.distribution[starKey as 1 | 2 | 3 | 4 | 5] || 0;
-                    const percentage = liveStats.count > 0 ? Math.round((count / liveStats.count) * 100) : 0;
-
-                    return (
-                      <div key={starKey} className="flex items-center space-x-3 text-xs">
-                        <div className="flex items-center space-x-1 w-12 text-slate-300 font-semibold">
-                          <span>{starKey}</span>
-                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        </div>
-
-                        <div className="flex-1 h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800/80">
-                          <div
-                            className="h-full bg-gradient-to-r from-amber-500 to-orange-400 transition-all duration-300 rounded-full"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-
-                        <div className="w-16 text-right font-mono text-slate-400">
-                          <span>{count}</span>
-                          <span className="text-[10px] text-slate-600 ml-1">({percentage}%)</span>
-                        </div>
+            {/* Live Analytics Panel (Only relevant for Sequential individual contestant rating) */}
+            {stageMode === "sequential" && (
+              <div className="space-y-6">
+                <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-6">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                        <BarChart3 className="w-6 h-6" />
                       </div>
-                    );
-                  })}
+                      <div>
+                        <h3 className="font-bold text-white text-base">Live Rating Tally</h3>
+                        <p className="text-xs text-slate-400">
+                          Chest #{activeRatingChest || "---"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="flex items-center space-x-1 text-2xl font-black text-amber-400">
+                        <span>{liveStats.average}</span>
+                        <Star className="w-6 h-6 fill-amber-400 text-amber-400" />
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-medium">{liveStats.count} Total Ratings</p>
+                    </div>
+                  </div>
+
+                  {/* Star Breakdown Progress Bars */}
+                  <div className="space-y-2.5">
+                    {[5, 4, 3, 2, 1].map((starKey) => {
+                      const count = liveStats.distribution[starKey as 1 | 2 | 3 | 4 | 5] || 0;
+                      const percentage = liveStats.count > 0 ? Math.round((count / liveStats.count) * 100) : 0;
+
+                      return (
+                        <div key={starKey} className="flex items-center space-x-3 text-xs">
+                          <div className="flex items-center space-x-1 w-12 text-slate-300 font-semibold">
+                            <span>{starKey}</span>
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          </div>
+
+                          <div className="flex-1 h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800/80">
+                            <div
+                              className="h-full bg-gradient-to-r from-amber-500 to-orange-400 transition-all duration-300 rounded-full"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+
+                          <div className="w-16 text-right font-mono text-slate-400">
+                            <span>{count}</span>
+                            <span className="text-[10px] text-slate-600 ml-1">({percentage}%)</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -1412,27 +1428,53 @@ export default function AdminPage() {
                       </div>
 
                       <div className="flex items-center space-x-3">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleSubStatus(sub.id, sub.status)}
-                          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer ${
-                            sub.status === "OPEN"
-                              ? "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                              : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                          }`}
-                        >
-                          {sub.status === "OPEN" ? (
-                            <>
-                              <ToggleLeft className="w-4 h-4" />
-                              <span>Close Sub-Event</span>
-                            </>
-                          ) : (
-                            <>
-                              <ToggleRight className="w-4 h-4" />
-                              <span>Re-Open Sub-Event</span>
-                            </>
-                          )}
-                        </button>
+                        {(() => {
+                          const isLiveOnStage =
+                            isCurrentVotingOpen &&
+                            String(currentStage?.subEventId) === String(sub.id);
+                          const isCloseDisabled = sub.status === "OPEN" && isLiveOnStage;
+
+                          return (
+                            <div className="relative group">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleSubStatus(sub.id, sub.status)}
+                                disabled={isCloseDisabled}
+                                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
+                                  isCloseDisabled
+                                    ? "bg-slate-800 text-slate-500 border border-slate-700 opacity-60 cursor-not-allowed"
+                                    : sub.status === "OPEN"
+                                    ? "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 cursor-pointer"
+                                    : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-pointer"
+                                }`}
+                                title={
+                                  isCloseDisabled
+                                    ? "Active on Stage! Close rating on stage before closing this sub-event."
+                                    : undefined
+                                }
+                              >
+                                {sub.status === "OPEN" ? (
+                                  <>
+                                    <ToggleLeft className="w-4 h-4" />
+                                    <span>
+                                      {isCloseDisabled ? "Live on Stage" : "Close Sub-Event"}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ToggleRight className="w-4 h-4" />
+                                    <span>Re-Open Sub-Event</span>
+                                  </>
+                                )}
+                              </button>
+                              {isCloseDisabled && (
+                                <div className="absolute bottom-full mb-1.5 right-0 hidden group-hover:block z-20 w-52 p-2 rounded-xl bg-slate-900 border border-rose-500/30 text-rose-300 text-[11px] font-semibold text-center shadow-2xl pointer-events-none">
+                                  Live on Stage! Close rating & reset stage first before closing.
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         <button
                           type="button"
