@@ -2,29 +2,42 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 1. Live Stage app state
-    match /app_state/{docId} {
-      allow read, write: if true;
+
+    // isAdmin() is true when the user is signed in via Firebase Anonymous Auth.
+    // The admin UI signs in anonymously only after a correct username+password
+    // check — audience members are never signed in and therefore cannot write.
+    function isAdmin() {
+      return request.auth != null;
     }
-    
+
+    // 1. Live Stage app state (everyone reads; only admin writes)
+    match /app_state/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // 2. Master Events
     match /master_events/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
-    
+
     // 3. Sub Events
     match /sub_events/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // 4. Sub Event Contestants Roster
     match /sub_event_participants/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // 5. Performed Contestants Log
     match /performed_participants/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // 6. Audience Ratings & Votes
@@ -34,8 +47,8 @@ service cloud.firestore {
       // Disallow updating votes once cast
       allow update: if false;
 
-      // Allow deletion only for administrative cleanup
-      allow delete: if true;
+      // Deletion only for administrative cleanup
+      allow delete: if isAdmin();
 
       allow create: if
         // 1. Deterministic ID Check

@@ -7,6 +7,7 @@ import {
   deleteMasterEvent,
 } from "@/lib/votingService";
 import { MasterEvent } from "@/lib/types";
+import { adminLogin, adminLogout, verifyAdminPassword, onAdminAuthChange } from "@/lib/adminAuth";
 import {
   ShieldCheck,
   Plus,
@@ -23,7 +24,9 @@ import Link from "next/link";
 export default function MasterEventsPage() {
   // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [usernameInput, setUsernameInput] = useState<string>("");
   const [passwordInput, setPasswordInput] = useState<string>("");
+  const [loggingIn, setLoggingIn] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Master Events Real-time List
@@ -42,18 +45,20 @@ export default function MasterEventsPage() {
   const [masterPassConfirm, setMasterPassConfirm] = useState<string>("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Login Handler
-  const handleLogin = (e: React.FormEvent) => {
+  // Firebase Auth drives isAuthenticated — also restores the session after a page refresh.
+  useEffect(() => onAdminAuthChange(setIsAuthenticated), []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
-
-    const validMasterPass = process.env.NEXT_PUBLIC_MASTER_PASSWORD || "masterpass";
-    const validAdminPass = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin";
-
-    if (passwordInput === validMasterPass || passwordInput === validAdminPass) {
-      setIsAuthenticated(true);
+    setLoggingIn(true);
+    const res = await adminLogin(usernameInput, passwordInput);
+    setLoggingIn(false);
+    if (res.success) {
+      setUsernameInput("");
+      setPasswordInput("");
     } else {
-      setAuthError("Invalid credentials. Please enter a valid password.");
+      setAuthError(res.error || "Invalid credentials.");
     }
   };
 
@@ -131,7 +136,21 @@ export default function MasterEventsPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Admin / Master Password
+                Username
+              </label>
+              <input
+                type="text"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                placeholder="Enter username..."
+                className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 text-sm"
+                required
+                autoComplete="username"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Password
               </label>
               <div className="relative">
                 <input
@@ -141,6 +160,7 @@ export default function MasterEventsPage() {
                   placeholder="Enter password..."
                   className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 text-sm"
                   required
+                  autoComplete="current-password"
                 />
                 <Lock className="w-4 h-4 text-slate-500 absolute right-3.5 top-3.5" />
               </div>
@@ -154,9 +174,10 @@ export default function MasterEventsPage() {
 
             <button
               type="submit"
-              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white font-bold text-sm shadow-lg shadow-amber-500/25 transition cursor-pointer"
+              disabled={loggingIn}
+              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white font-bold text-sm shadow-lg shadow-amber-500/25 transition cursor-pointer disabled:opacity-60"
             >
-              Access Master Settings
+              {loggingIn ? "Signing in..." : "Access Master Settings"}
             </button>
 
             <div className="text-center pt-2">
@@ -193,7 +214,7 @@ export default function MasterEventsPage() {
         </div>
 
         <button
-          onClick={() => setIsAuthenticated(false)}
+          onClick={() => adminLogout()}
           className="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
