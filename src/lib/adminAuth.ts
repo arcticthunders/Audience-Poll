@@ -22,17 +22,28 @@ export async function adminLogin(
       body: JSON.stringify({ username, password }),
     });
 
-    const data = await res.json();
+    let data: { token?: string; error?: string } = {};
+    try {
+      data = await res.json();
+    } catch {
+      return { success: false, error: `Server error (${res.status}). Check deployment logs.` };
+    }
 
     if (!res.ok) {
       return { success: false, error: data.error || "Invalid credentials." };
     }
 
-    await signInWithCustomToken(authInstance(), data.token);
+    try {
+      await signInWithCustomToken(authInstance(), data.token!);
+    } catch (err) {
+      const code = (err as { code?: string })?.code || "";
+      return { success: false, error: `Firebase sign-in failed: ${code || String(err)}` };
+    }
+
     return { success: true };
   } catch (err) {
     console.error("Admin login error:", err);
-    return { success: false, error: "Sign-in failed. Please try again." };
+    return { success: false, error: `Network error: ${String(err)}` };
   }
 }
 
