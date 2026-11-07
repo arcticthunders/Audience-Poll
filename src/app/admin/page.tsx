@@ -21,7 +21,7 @@ import {
   deleteSubEvent,
 } from "@/lib/votingService";
 import { CurrentStage, MasterEvent, SubEvent, SubEventParticipant, RatingStats } from "@/lib/types";
-import { adminLogin, adminLogout, verifyAdminPassword, onAdminAuthChange } from "@/lib/adminAuth";
+import { adminLogin, adminLogout, onAdminAuthChange } from "@/lib/adminAuth";
 import Link from "next/link";
 import {
   ShieldCheck,

@@ -7,7 +7,7 @@ import {
   deleteMasterEvent,
 } from "@/lib/votingService";
 import { MasterEvent } from "@/lib/types";
-import { adminLogin, adminLogout, verifyAdminPassword, onAdminAuthChange } from "@/lib/adminAuth";
+import { adminLogin, adminLogout, onAdminAuthChange } from "@/lib/adminAuth";
 import {
   ShieldCheck,
   Plus,
